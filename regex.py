@@ -1,13 +1,13 @@
 import re
 import string
-import csv
+from itertools import chain
 
 #Bazı örnek textler
 text = """Merhaba. ben Ahmet Bitik. 25 yaşındayım. İnşaat ustasıyım. Ankara'da oturuyorum. Doğum tarihim 05.04.2002"""
-text2= """Selam, bana Akif Taşlı derler. Yaşım 48. İşçiyim. Tokat'da yaşıyorum. Doğum tarihim 07.08.1988"""
-text3= """Selam, ben Doktor Veysel. Yaşım 35. İşçiyim. Malatya'da yaşıyorum. Doğum tarihim 07.08.1988"""
-text4 = """Selam, ben Akman. Yaşım 58'dir. İşçiyim. Erzurum'da yaşıyorum. Doğum tarihim 07.08.1988"""
-text5 = """Selam, ben Hasan. 63 yaşındayım. İşçiyim. Çanakkale'da yaşıyorum. Doğum tarihim 07.08.1988"""
+text2= """Selam, bana Akif Taşlı derler. Yaşım 22. İşçiyim. Tokat'da yaşıyorum. Doğum tarihim 09.11.2001"""
+text3= """Selam, ben Doktor Veysel. Yaşım 35. İşçiyim. Malatya'da yaşıyorum. Doğum tarihim 04.1989"""
+text4 = """Selam, ben Akman. Yaşım 58'dir. İşçiyim. Erzurum'da yaşıyorum. Doğum tarihim 06.08.1966"""
+text5 = """Selam, ben Hasan. 63 yaşındayım. İşçiyim. Çanakkale'da yaşıyorum. Doğum tarihim 2.10.1961. Yani 2 Ekim 1961 doğumluyum."""
 
 sample_text ="""Merhaba, ben Mehmet Kaya. 2015 yılında Sakarya Üniversitesi İnsan Kaynakları Yönetimi Bölümü’nden mezun oldum. 
 Üniversite eğitimim boyunca Migros ve n11.com başta olmak üzere birçok kurumda staj yaptım. 
@@ -20,7 +20,7 @@ texts = [text,text2, text3, text4, text5] # Ne zaman mikrofondan ses alınırsa 
 
 yas = r"\d+\syaş\w+"  #yas adlı pattern ile konuşmadaki yaş bilgisi elde edildi.
 yasadigiYer = r"(/w+'de|/w+'da (otur\w+|yaşıyor\w+|ikamet))" #yasadigiYer adlı pattern ile konuşmada kişinin yaşadığı yer bilgisi elde edildi.
-tarih = r"([0-3][0-9].[0-1][0-9].[0-9]{4}|[1-9]{0,2}\s\w+\s[1-9][0-9]{3})" #tarih adlı pattern ile konuşmada kişinin doğum tarihi elde edildi.
+tarih = r"([0-3]?[0-9].[0-1][0-9].[0-9]{4}|[1-9]{0,2}\s\w+\s[1-9][0-9]{3})" #tarih adlı pattern ile konuşmada kişinin doğum tarihi elde edildi.
 
 #Çoklu metinler için çoklu isim patternleri ve isim listeleri
 multiAdPatterns = [r"[A|a]dım\s\w+\s\w+", r"[B|b]enim ismim\s\w+\s\w+", r"[B|b]ana\s\w+\s\w+", r"[B|b]en\s[a-zA-Z]+\s[a-zA-Z]+"]
@@ -39,7 +39,16 @@ yaslar = []
 sehirPatterns = [r"([A-Z]+'de|[A-İ]+'da (otur\w+|yaşıyor\w+))", r"Ben\s\S+\'[de|da]{2}"]
 sehirTemp = []
 duzensiz_sehirler = []
-sehirler= []
+sehirler = []
+
+#Çoklu metinler için çoklu ikametgah patternleri ve listeleri
+tarihPatterns = [r"[0-3]?[0-9]\.[0-1]?[0-9]\.[0-9]?[0-9]{3}", r"[0-31]\s\w+\s[0-9]?[0-9]{3}"]
+#r"([0-3][0-9].[0-1][0-9].[0-9]{4}|[1-9]{0,2}\s\w+\s[1-9][0-9]{3})" yedek kalıplar
+#r"[0-3]?[0-9]\.[0-1]?[0-9]\.[0-9]?[0-9]{3}", r"[0-31]\s\w+\s[0-9]?[0-9]{3}"
+#r"[[0-3]?[0-9]]?\.?[[0-1]?[0-9]]?\.?[1-9]?[1-9]{3}"
+tarihTemp = []
+duzensiz_tarihler = []
+tarihler = []
 
 
 # --- Çoklu ve birbirinden farklı metinlerde bulunan isimleri ayıklama fonksiyonu --- #
@@ -70,12 +79,12 @@ def isimAyiklama():
     #print(duzensiz_isimler)
     isimler = [y[4:] for y in duzensiz_isimler]
 
-
     for num in range(0,len(isimler)):
         isimler[num] = isimler[num].lstrip()
         if "." in isimler[num]:
             isimler[num] = isimler[num][:-1]
         #print(x)
+
     for i in isimler:
         splitted_i = i.split(" ")
         with open('Regular Expression/meslekler.csv', 'rt') as file:
@@ -123,7 +132,7 @@ def yasAyiklama():
 
     print(yaslar)
 
-yasAyiklama()
+yasAyiklama() #Çalışıyor
 print("\n")
 
 #<----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
@@ -152,10 +161,43 @@ def sehirAyiklama():
 
     print(sehirler)
 
-sehirAyiklama()
+sehirAyiklama() # Çalışıyor
+print("\n")
+#<----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
+#<--- Çoklu ve birbirinden farklı metinlerde bulunan doğum tarihi bilgilerini ayıklama fonksiyonu --->#
+
 
 #Bu kısmın altı tekli metin ve patternler içindir. Üst kısım ise çoklu metin ve pattern için kullanılmıştır.
+def tarihAyiklama():
+    for txt in texts:
+        for pattern in tarihPatterns:
+            res = re.findall(pattern, txt)
+            if len(res) == 0:
+                    continue
+            else:
+                #print(res)#Düzenlenmemiş isim listesi
+                duzensiz_tarihler.append(res)
+    duzenli_tarihler = list(chain.from_iterable(duzensiz_tarihler))
+    #print(duzenli_tarihler)
 
+    for duzenli_tarih in duzenli_tarihler:
+        if '.' in duzenli_tarih:
+            duzenli_tarih = duzenli_tarih.replace('.', '/')
+            tarihler.append(duzenli_tarih)
+        elif ' ' in duzenli_tarih:
+            duzenli_tarih = duzenli_tarih.replace(' ', '/')
+            tarihler.append(duzenli_tarih)
+
+    print(tarihler)
+"""if '.' in duzensiz_tarih[0]:
+        duzensiz_tarih[0] = duzensiz_tarih[0].replace('.', '/')
+        tarihler.append(duzensiz_tarih[0])
+    elif ' ' in duzensiz_tarih[0]:
+        duzensiz_tarih[0] = duzensiz_tarih[0].replace(' ', '/')
+        tarihler.append(duzensiz_tarih[0])"""
+tarihAyiklama()
+print("\n")
+#<----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------->
 
 """
 x = re.findall(adPatterns[3], text)
